@@ -1,9 +1,8 @@
 import logging
 
-import responses
-from clients import FakeClient, OllamaClient
-from extractor import ExtractionFailed, extract
-from test_extractor import JobPosting
+from clients import FakeClient, OllamaClient # type: ignore
+from extractor import ExtractionFailed, extract # type: ignore
+from nonapi.test_extractor import JobPosting
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +27,7 @@ if __name__ == "__main__":
         print(result.model_dump_json(indent=2))
     except ExtractionFailed as e:
         print("\n=== FAILED, all attempts ===")
-        for a in e.attempts:
+        for a in e.attempts: # type: ignore
             print(f"\n--- attempt {a['attempt']} ---")
-            print(a.get("raw_response", "")[:300])
-            print("ERROR:", str(a.get("error", ""))[:300])
+            print(a.get("raw_response", "")[:300]) # type: ignore
+            print("ERROR:", str(a.get("error", ""))[:300]) # type: ignore

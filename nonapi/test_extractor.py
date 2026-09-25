@@ -5,11 +5,11 @@ They cost nothing -- FakeClient never touches the network.
 """
 
 import pytest
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError # type: ignore
 
-import responses
+import nonapi.responses as responses
 from clients import FakeClient
-from extractor import ExtractionFailed, extract
+from extractor import ExtractionFailed, extract # type: ignore
 
 
 class JobPosting(BaseModel):

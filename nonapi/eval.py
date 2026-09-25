@@ -7,15 +7,15 @@ scores the result field by field. This is the difference between
 
 from __future__ import annotations
 
-from eval_set import EXAMPLES
+from nonapi.eval_set import EXAMPLES # type: ignore
 from clients import OllamaClient
-from extractor import ExtractionFailed, extract
-from test_extractor import JobPosting
+from extractor import ExtractionFailed, extract # type: ignore
+from nonapi.test_extractor import JobPosting # type: ignore
 
 EXACT_FIELDS = ["title", "company", "remote", "years_experience_min"]
 
 
-def score_skills(actual: list[str], expected: list[str]) -> tuple[float, set, set]:
+def score_skills(actual: list[str], expected: list[str]) -> tuple[float, set, set]: # type: ignore
     """Recall-style score for a list field: what fraction of expected
     items actually showed up. Order doesn't matter, one miss doesn't
     zero out the whole field.
@@ -28,7 +28,7 @@ def score_skills(actual: list[str], expected: list[str]) -> tuple[float, set, se
 
     if not expected_set:
         # nothing was supposed to be found; perfect score iff nothing was
-        return (1.0 if not actual_set else 0.0), set(), actual_set
+        return (1.0 if not actual_set else 0.0), set(), actual_set # type: ignore
 
     matched = actual_set & expected_set
     missing = expected_set - actual_set
@@ -36,47 +36,47 @@ def score_skills(actual: list[str], expected: list[str]) -> tuple[float, set, se
     return len(matched) / len(expected_set), missing, extra
 
 
-def run_eval(client) -> None:
+def run_eval(client) -> None: # type: ignore
     field_hits = {f: 0 for f in EXACT_FIELDS}
     field_total = {f: 0 for f in EXACT_FIELDS}
     skill_scores = []
     failures = []
 
-    for i, (text, expected) in enumerate(EXAMPLES, start=1):
+    for i, (text, expected) in enumerate(EXAMPLES, start=1): # type: ignore
         print(f"\n{'=' * 60}")
-        print(f"Example {i}/{len(EXAMPLES)}")
+        print(f"Example {i}/{len(EXAMPLES)}") # type: ignore
         print("=" * 60)
 
         try:
-            result = extract(text, JobPosting, client)
+            result = extract(text, JobPosting, client) # type: ignore
         except ExtractionFailed as e:
-            print(f"  EXTRACTION FAILED after {len(e.attempts)} attempts")
-            for a in e.attempts:
-                print(f"    attempt {a['attempt']}: {str(a.get('error',''))[:200]}")
-            failures.append(i)
+            print(f"  EXTRACTION FAILED after {len(e.attempts)} attempts") # type: ignore
+            for a in e.attempts: # type: ignore
+                print(f"    attempt {a['attempt']}: {str(a.get('error',''))[:200]}") # type: ignore
+            failures.append(i) # type: ignore
             continue
 
-        result_dict = result.model_dump()
+        result_dict = result.model_dump() # type: ignore
 
         for field in EXACT_FIELDS:
             field_total[field] += 1
-            actual_val = result_dict.get(field)
-            expected_val = expected.get(field)
+            actual_val = result_dict.get(field) # type: ignore
+            expected_val = expected.get(field) # type: ignore
             ok = actual_val == expected_val
             field_hits[field] += int(ok)
             mark = "OK" if ok else "MISS"
             print(f"  [{mark:4}] {field:22} actual={actual_val!r:30} expected={expected_val!r}")
 
-        score, missing, extra = score_skills(
-            result_dict.get("required_skills", []), expected.get("required_skills", [])
+        score, missing, extra = score_skills( # type: ignore
+            result_dict.get("required_skills", []), expected.get("required_skills", []) # type: ignore
         )
-        skill_scores.append(score)
+        skill_scores.append(score) # type: ignore
         mark = "OK" if score == 1.0 else "PART" if score > 0 else "MISS"
         print(f"  [{mark:4}] required_skills        score={score:.2f}")
         if missing:
-            print(f"         missing: {sorted(missing)}")
+            print(f"         missing: {sorted(missing)}") # type: ignore
         if extra:
-            print(f"         extra:   {sorted(extra)}")
+            print(f"         extra:   {sorted(extra)}") # type: ignore
 
     print(f"\n{'=' * 60}")
     print("SUMMARY")
@@ -87,7 +87,7 @@ def run_eval(client) -> None:
         print(f"  {field:22} {hits}/{total}  ({pct:.0f}%)")
 
     if skill_scores:
-        avg = sum(skill_scores) / len(skill_scores)
+        avg = sum(skill_scores) / len(skill_scores) # type: ignore
         print(f"  {'required_skills (avg)':22} {avg:.2f}")
 
     if failures:

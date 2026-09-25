@@ -58,7 +58,7 @@ Required qualifications, capabilities and skills
 * Working knowledge of role-based access control, service ownership
   boundaries, and API contract design in distributed systems.
 """
-EXAMPLES = [
+EXAMPLES = [ # type: ignore
     (
         """
         Senior Data Engineer - Acme Corp

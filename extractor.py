@@ -35,9 +35,9 @@ class ExtractionFailed(Exception):
     record. Without it you cannot debug a failure in production.
     """
 
-    def __init__(self, message: str, attempts: list[dict]):
+    def __init__(self, message: str, attempts: list[dict]): # type: ignore
         super().__init__(message)
-        self.attempts = attempts
+        self.attempts = attempts # type: ignore
 
 
 def build_prompt(text: str, model_cls: Type[T]) -> str:
@@ -54,19 +54,34 @@ def build_prompt(text: str, model_cls: Type[T]) -> str:
     Python class and the model.
     """
     schema = model_cls.model_json_schema()
+    field_names = list(schema["properties"].keys())
+    skeleton = json.dumps({name: "..." for name in field_names}, indent=2)
+    field_rules = "\n".join(
+        f"    - {name}: {info['description']}"
+        for name, info in schema["properties"].items()
+        if "description" in info
+    )
     return f"""Extract data matching this JSON Schema:
-    
+
 
         {json.dumps(schema, indent=2)}
 
         Return ONLY the JSON object. No markdown fences, no commentary.
+        Return a single flat JSON object with exactly these top-level keys: {field_names}
+        Do NOT return the schema itself. Do NOT wrap the answer in "properties", "type", or any other schema keyword.
+        For any field typed as a number: if the text gives a range (e.g. "$180,000-280,000/year"),
+        use the lower bound as a plain integer with no currency symbols, commas, or units (e.g. 180000).
+
+        Field-specific rules (read carefully, each field is distinct even if related):
+{field_rules}
+
+        Your answer must look like this shape (values replaced with the real extracted data):
+
+        {skeleton}
 
         --- TEXT ---
         {text}
         --- END ---"""
-   
-  
-    raise NotImplementedError
 
 
 def build_repair_prompt(original_prompt: str, bad_response: str, error_text: str) -> str:
@@ -105,7 +120,7 @@ def _strip_fences(raw: str) -> str:
 def extract(
     text: str,
     model_cls: Type[T],
-    client,
+    client, # type: ignore
     max_attempts: int = 3,
 ) -> T:
     """Extract a validated `model_cls` from `text`. Never returns garbage.
@@ -149,28 +164,29 @@ def extract(
     attempts = []
 
     for attempt in range(1, max_attempts + 1):
-        raw = client.complete(prompt)
-        record = {"attempt": attempt, "raw_response": raw}
+        raw = client.complete(prompt) # type: ignore
+        record = {"attempt": attempt, "raw_response": raw} # type: ignore
 
         try:
-            obj = model_cls.model_validate_json(_strip_fences(raw))
+            obj = model_cls.model_validate_json(_strip_fences(raw)) # type: ignore
         except ValidationError as e:
             error_text = e.json(indent=2)
             record["error"] = error_text
-            attempts.append(record)
-            log.warning("validation_failed attempt=%s", attempt)
-            prompt = build_repair_prompt(original_prompt, raw, error_text)
+            attempts.append(record) # type: ignore
+            log.info(attempt);
+            log.warning("validation_failed attempt=%s error=%s", attempt, error_text)
+            prompt = build_repair_prompt(original_prompt, raw, error_text) # type: ignore
             continue
         except ValueError as e:
             error_text = f"That was not valid JSON: {e}"
             record["error"] = error_text
-            attempts.append(record)
-            log.warning("json_decode_failed attempt=%s", attempt)
-            prompt = build_repair_prompt(original_prompt, raw, error_text)
+            attempts.append(record) # type: ignore
+            log.warning("json_decode_failed attempt=%s error=%s", attempt, error_text)
+            prompt = build_repair_prompt(original_prompt, raw, error_text) # type: ignore
             continue
 
         record["status"] = "ok"
-        attempts.append(record)
+        attempts.append(record) # type: ignore
         log.info("succeeded attempt=%s", attempt)
         return obj
 
